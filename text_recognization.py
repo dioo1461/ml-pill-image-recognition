@@ -1,6 +1,6 @@
 from PIL import Image
 import cv2
-import pytesseract 
+import pytesseract
 import sys
 import os
 from get_canny import Convert_Image
@@ -16,13 +16,12 @@ img_path = os.path.join(script_dir, 'exam_image.jpg')
 converted = Convert_Image(img_path)
 img = converted.get_cvt_gray()
 # img = cv2.imread(img_path)
-# img = Image.open(img_path)
-text = pytesseract.image_to_string(img,lang='eng')
+text = pytesseract.image_to_string(img, lang='eng', config='--dpi 300')
 if text == '':
     print('text not detected')
 else:
-    print (text)
-    
+    print(text)
+
 cv2.imshow('converted', img)
 cv2.waitKey(0)
 cv2.destroyAllWindows()

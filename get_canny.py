@@ -14,12 +14,35 @@ class Convert_Image():
 
     def get_cvt_gray(self):
         image_rbg = remove(self._image)
+
+        image_rbg = self.img_Contrast(image_rbg)
+        
         image_rbg_gray = cv2.cvtColor(image_rbg, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(image_rbg_gray, (5, 5), sigmaX=0)
         enhanced_image = cv2.convertScaleAbs(blur, alpha=2.8, beta=20)
-        self._cvt_gray = enhanced_image
-        # _, binary_image = cv2.threshold(blur, 150, 255, cv2.THRESH_BINARY)  # 이진화
+
+        _, binary_image = cv2.threshold(enhanced_image, 220, 255, cv2.THRESH_BINARY)  # 이진화
+        self._cvt_gray = binary_image
         return self._cvt_gray
+    
+    def img_Contrast(self, img):
+        # -----Converting image to LAB Color model-----------------------------------
+        lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+
+        # -----Splitting the LAB image to different channels-------------------------
+        l, a, b = cv2.split(lab)
+
+        # -----Applying CLAHE to L-channel-------------------------------------------
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        cl = clahe.apply(l)
+
+        # -----Merge the CLAHE enhanced L-channel with the a and b channel-----------
+        limg = cv2.merge((cl, a, b))
+
+        # -----Converting image from LAB Color model to RGB model--------------------
+        final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+
+        return final
 
 # edged = cv2.Canny(blur, 10, 250)
 # ret, thresh = cv2.threshold(edged, 127, 255, cv2.THRESH_BINARY)
