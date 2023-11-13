@@ -3,7 +3,7 @@ import cv2
 import pytesseract
 import sys
 import os
-from get_canny import Convert_Image
+from image_preprocessing import Image_Preprocessing
 sys.path.append(os.pardir)
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
 
@@ -13,10 +13,10 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 # 이미지 파일의 상대 경로
 img_path = os.path.join(script_dir, 'exam_image.jpg')
 
-converted = Convert_Image(img_path)
+converted = Image_Preprocessing(img_path)
 img = converted.get_cvt_gray()
 # img = cv2.imread(img_path)
-text = pytesseract.image_to_string(img, lang='eng', config='--dpi 300')
+text = pytesseract.image_to_string(img, lang='eng')
 if text == '':
     print('text not detected')
 else:
