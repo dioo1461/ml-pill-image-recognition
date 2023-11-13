@@ -22,9 +22,39 @@ class Convert_Image():
         enhanced_image = cv2.convertScaleAbs(blur, alpha=2.8, beta=20)
 
         _, binary_image = cv2.threshold(enhanced_image, 220, 255, cv2.THRESH_BINARY)  # 이진화
-        self._cvt_gray = binary_image
+        dilated = self.closing(binary_image)
+
+        self._cvt_gray = dilated
         return self._cvt_gray
     
+    # kernel과 일치하는 부분에 하나라도 0이 있으면 해당 부분을 모두 채움
+    def dilation(self, img):
+        # kernel size가 커질수록 영향 커짐
+        kernel = np.ones((6,6), np.uint8)
+        result = cv2.dilate(img, kernel, iterations=1)
+        return result
+    
+    # kernel과 일치하는 부분에 하나라도 0이 있으면 해당 부분을 모두 제거
+    def erosion(self, img):
+        # kernel size가 커질수록 영향 커짐
+        kernel = np.ones((6,6), np.uint8)
+        result = cv2.erode(img, kernel, iterations=1)
+        return result
+    
+    #  erosion 적용 후 dilation 적용, 잡티 제거 효과
+    def opening(self, img):
+        kernel = np.ones((6,6), np.uint8)
+        result = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+        return result
+
+    # dilation 적용 후 erosion 적용, 윤곽이 도드라지는 효과
+    def closing(self, img):
+        kernel = np.ones((6,6), np.uint8)
+        result = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+        return result
+    
+   
+
     def img_Contrast(self, img):
         # -----Converting image to LAB Color model-----------------------------------
         lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
@@ -40,9 +70,9 @@ class Convert_Image():
         limg = cv2.merge((cl, a, b))
 
         # -----Converting image from LAB Color model to RGB model--------------------
-        final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+        result = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
 
-        return final
+        return result
 
 # edged = cv2.Canny(blur, 10, 250)
 # ret, thresh = cv2.threshold(edged, 127, 255, cv2.THRESH_BINARY)
