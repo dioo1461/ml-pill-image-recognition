@@ -11,7 +11,7 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # 이미지 파일의 상대 경로
-img_path = os.path.join(script_dir, 'exam_image.jpg')
+img_path = os.path.join(script_dir, 'data/' + 'exam_image.jpg')
 
 converted = Image_Preprocessing(img_path)
 img = converted.get_cvt_gray()
