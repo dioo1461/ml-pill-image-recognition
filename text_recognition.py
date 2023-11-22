@@ -11,18 +11,23 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # 이미지 파일의 상대 경로
-img_path = os.path.join(script_dir, 'data/' + 'M200.jpg')
+img_path = os.path.join(script_dir, 'data/' + 'am5_example.jpg')
 
-converted = Image_Preprocessing(img_path)
-# img = converted.get_text_rec_cvt()
-img = converted.get_engraved_text_rec_cvt()
+convertor = Image_Preprocessing(img_path)
+# img = convertor
+#.get_text_rec_cvt()
+img = convertor.get_engraved_text_rec_cvt()
+print(img.shape)
 # img = cv2.imread(img_path)
+
+cv2.imshow('converted', img)
+cv2.imshow('contours', convertor.get_engraved_text_bounding())
+
 text = pytesseract.image_to_string(img, lang='eng')
 if text == '':
     print('text not detected')
 else:
     print(text)
 
-cv2.imshow('converted', img)
 cv2.waitKey(0)
 cv2.destroyAllWindows()

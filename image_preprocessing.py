@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import os
 from rembg import remove
 from PIL import Image
-import pilldata as pdt
+import pilldata as pd
+import positionManager
 
 
 class Image_Preprocessing():
@@ -13,86 +14,116 @@ class Image_Preprocessing():
         self._image = cv2.imread(img_path)
 
     def get_engraved_text_rec_cvt(self):
-        self._engraved_text_rec_cvt = self._image
+        self._engraved_text_img_cvt = self._image
 
         # 이미지 배경 제거
-        self._engraved_text_rec_cvt = remove(self._image)
+        self._engraved_text_img_cvt = remove(self._image)
 
         # 이미지의 대비를 증가시킴
-        # self._engraved_text_rec_cvt = self.apply_clahe(self._engraved_text_rec_cvt)
+        # self._engraved_text_img_cvt = self.apply_clahe(self._engraved_text_img_cvt)
 
         # 이미지를 흑백으로 변환
-        self._engraved_text_rec_cvt = cv2.cvtColor(self._engraved_text_rec_cvt, cv2.COLOR_BGR2GRAY)
+        self._engraved_text_img_cvt = cv2.cvtColor(self._engraved_text_img_cvt, cv2.COLOR_BGR2GRAY)
 
         # 가우시안 블러 처리
-        self._engraved_text_rec_cvt = cv2.GaussianBlur(self._engraved_text_rec_cvt, (5, 5), sigmaX=0)
+        self._engraved_text_img_cvt = cv2.GaussianBlur(self._engraved_text_img_cvt, (5, 5), sigmaX=0)
 
         # histogram equalization 적용
-        self._engraved_text_rec_cvt = cv2.equalizeHist(self._engraved_text_rec_cvt)
+        self._engraved_text_img_cvt = cv2.equalizeHist(self._engraved_text_img_cvt)
         
+        # self._engraved_text_img_cvt = positionManager.GetPillContour(self._image)
+
         # black hat 적용
-        # self._engraved_text_rec_cvt = self.blackhat(self._engraved_text_rec_cvt, (3,3))
+        self._engraved_text_img_cvt = self.blackhat(self._engraved_text_img_cvt, (31,31))
 
-         # 이진화 적용
-        # _, self._engraved_text_rec_cvt = cv2.threshold(self._engraved_text_rec_cvt, 200, 255, cv2.THRESH_BINARY)
+        # 단순 threshold 이진화 적용
+        # _, self._engraved_text_img_cvt = cv2.threshold(self._engraved_text_img_cvt, 35, 255, cv2.THRESH_BINARY)
 
-        # adaptive threshold 적용 (이진화)
-        self._engraved_text_rec_cvt = self.adaptive_threshold(self._engraved_text_rec_cvt, 9, 5)
+        # # adaptive threshold 이진화 적용
+        # self._engraved_text_img_cvt = self.adaptive_threshold(self._engraved_text_img_cvt, 9, 5)
 
-        # 이진화된 이미지 반전 (외곽선 검출 시 어두운 배경에서 밝은 객체를 찾는 것이 더 유리)
-        self._engraved_text_rec_cvt = cv2.bitwise_not(self._engraved_text_rec_cvt)
+        # # 이진화된 이미지 반전 (외곽선 검출 시 어두운 배경에서 밝은 객체를 찾는 것이 더 유리)
+        # self._engraved_text_img_cvt = cv2.bitwise_not(self._engraved_text_img_cvt)
 
-        # 외곽선 제거
-        contours, _ = cv2.findContours(self._engraved_text_rec_cvt, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        # 빈 이미지 생성
-        contour_image = np.zeros_like(self._engraved_text_rec_cvt)
-        # 모든 윤곽선 그리기
-        cv2.drawContours(contour_image, contours, -1, (255, 255, 255), thickness=cv2.FILLED)
-        # 윤곽선이 그려진 이미지 표시
-        cv2.imshow('Contours', contour_image)
-        # cv2.drawContours(self._engraved_text_rec_cvt, [contours[0]], -1, (0, 0, 0), thickness=cv2.FILLED)
+        # # 외곽선 제거
+        # contours, _ = cv2.findContours(self._engraved_text_img_cvt, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        # # 빈 이미지 생성
+        # contour_image = np.zeros_like(self._engraved_text_img_cvt)
+        # # 모든 윤곽선 그리기
 
-        # self._engraved_text_rec_cvt = self.opening(self._engraved_text_rec_cvt, (5,5))
+        # # cv2.drawContours(self._engraved_text_img_cvt, [contours[0]], -1, (0, 0, 0), thickness=cv2.FILLED)
 
-        return self._engraved_text_rec_cvt
+        # # self._engraved_text_img_cvt = self.opening(self._engraved_text_img_cvt, (5,5))
+
+        return self._engraved_text_img_cvt
+
+    def get_engraved_text_bounding(self):
+        # contours, last_idx = positionManager.GetPillContour(self._image, 100)
+        # contour_image = np.zeros_like(self._engraved_text_img_cvt)
+        # res = cv2.drawContours(contour_image, contours, last_idx, (255,255,255), thickness=5)
+        res = self._image
+
+        # 이미지 배경 제거
+        res = remove(self._image)
+
+        # 이미지의 대비를 증가시킴
+        # self._engraved_text_img_cvt = self.apply_clahe(self._engraved_text_img_cvt)
+
+        # 이미지를 흑백으로 변환
+        res = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
+
+        # 가우시안 블러 처리
+        res = cv2.GaussianBlur(res, (5, 5), sigmaX=0)
+
+        # histogram equalization 적용
+        res = cv2.equalizeHist(res)
+        # adaptive threshold 이진화 적용
+        res = self.adaptive_threshold(res, 9, 5)
+
+        res = cv2.bitwise_not(res)
+
+        res = self.opening(res, (6,6))
+
+        res = self.bounding_box(res)
+        return res
 
     def get_text_rec_cvt(self):
         # 이미지 배경 제거
-        self._text_rec_cvt = remove(self._image)
+        self._text_img_cvt = remove(self._image)
 
         # # 이미지의 대비를 증가시킴
-        # self._text_rec_cvt = self.apply_clahe(self._text_rec_cvt)
+        # self._text_img_cvt = self.apply_clahe(self._text_img_cvt)
 
         # 이미지를 흑백으로 변환
-        self._text_rec_cvt = cv2.cvtColor(self._text_rec_cvt, cv2.COLOR_BGR2GRAY)
+        self._text_img_cvt = cv2.cvtColor(self._text_img_cvt, cv2.COLOR_BGR2GRAY)
 
         # 가우시안 블러 처리
-        self._text_rec_cvt = cv2.GaussianBlur(self._text_rec_cvt, (5, 5), sigmaX=0)
+        self._text_img_cvt = cv2.GaussianBlur(self._text_img_cvt, (5, 5), sigmaX=0)
 
         # 밝기와 대비 증가
-        self._text_rec_cvt = cv2.convertScaleAbs(self._text_rec_cvt, alpha=2.8, beta=20)
+        self._text_img_cvt = cv2.convertScaleAbs(self._text_img_cvt, alpha=2.8, beta=20)
 
         # adaptive threshold 적용 (이진화)
-        self._text_rec_cvt = self.adaptive_threshold(self._text_rec_cvt, 9, 5)
+        self._text_img_cvt = self.adaptive_threshold(self._text_img_cvt, 9, 5)
 
         # 이진화된 이미지 반전
-        self._text_rec_cvt = cv2.bitwise_not(self._text_rec_cvt)
+        self._text_img_cvt = cv2.bitwise_not(self._text_img_cvt)
 
         # morphological 변환 적용
-        self._text_rec_cvt = self.closing(self._text_rec_cvt, (5,5))
-        self._text_rec_cvt = self.opening(self._text_rec_cvt, (5,5))
-        self._text_rec_cvt = self.dilation(self._text_rec_cvt, (9,7))
+        self._text_img_cvt = self.closing(self._text_img_cvt, (5,5))
+        self._text_img_cvt = self.opening(self._text_img_cvt, (5,5))
+        self._text_img_cvt = self.dilation(self._text_img_cvt, (9,7))
 
         # # 가우시안 블러 처리
-        # self._text_rec_cvt = cv2.GaussianBlur(self._text_rec_cvt, (5, 5), sigmaX=0)
+        # self._text_img_cvt = cv2.GaussianBlur(self._text_img_cvt, (5, 5), sigmaX=0)
 
         # 이미지를 비율 기준으로 축소
-        # self._text_rec_cvt = cv2.resize(self._text_rec_cvt, dsize=(0, 0), fx=0.3, fy=0.3, interpolation=cv2.INTER_AREA)
+        # self._text_img_cvt = cv2.resize(self._text_img_cvt, dsize=(0, 0), fx=0.3, fy=0.3, interpolation=cv2.INTER_AREA)
 
         # 텍스트에 bounding box 생성하여 이미지의 텍스트 영역만 cut
-        self._text_rec_cvt = self.bounding_box(self._text_rec_cvt)
+        self._text_img_cvt = self.bounding_box(self._text_img_cvt)
 
-        return self._text_rec_cvt
+        return self._text_img_cvt
 
     def adaptive_threshold(self, img, block_size, C):
         result = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, block_size, C)
