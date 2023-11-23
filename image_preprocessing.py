@@ -10,10 +10,19 @@ import positionManager
 
 
 class Image_Preprocessing():
-    def __init__(self, img_path):
+    def __init__(self, image):
+        self._image = image
+        self._text_img_cvt = None
+        self._engraved_text_img_cvt = None
+        self._engraved_text_bounding = None
+
+    def init_by_path(self, img_path):
         self._image = cv2.imread(img_path)
 
     def get_engraved_text_rec_cvt(self):
+        if self._engraved_text_img_cvt is not None:
+            return self._engraved_text_img_cvt
+
         self._engraved_text_img_cvt = self._image
 
         # 이미지 배경 제거
@@ -55,19 +64,19 @@ class Image_Preprocessing():
 
         # # self._engraved_text_img_cvt = self.opening(self._engraved_text_img_cvt, (5,5))
 
+        [s_x, e_x, s_y, e_y] = self.get_bounding_box_coordinates()
+        self._engraved_text_img_cvt = self._engraved_text_img_cvt[s_y:e_y, s_x:e_x]
+
         return self._engraved_text_img_cvt
 
     def get_engraved_text_bounding(self):
-        # contours, last_idx = positionManager.GetPillContour(self._image, 100)
-        # contour_image = np.zeros_like(self._engraved_text_img_cvt)
-        # res = cv2.drawContours(contour_image, contours, last_idx, (255,255,255), thickness=5)
-        res = self._image
-
+        if self._engraved_text_bounding is not None:
+            return self._engraved_text_bounding
         # 이미지 배경 제거
         res = remove(self._image)
 
         # 이미지의 대비를 증가시킴
-        # self._engraved_text_img_cvt = self.apply_clahe(self._engraved_text_img_cvt)
+        res = self.apply_clahe(res)
 
         # 이미지를 흑백으로 변환
         res = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
@@ -77,17 +86,59 @@ class Image_Preprocessing():
 
         # histogram equalization 적용
         res = cv2.equalizeHist(res)
+
         # adaptive threshold 이진화 적용
-        res = self.adaptive_threshold(res, 9, 5)
+        # block size 작을수록, C값 클수록 threshold 엄격해짐
+        res = self.adaptive_threshold(res, 13, 3)
 
-        res = cv2.bitwise_not(res)
+        # cv2.imshow('pre-res', res)
 
-        res = self.opening(res, (6,6))
+        # 외곽선 검출 후 제거 작업
+        contours, last_idx = positionManager.GetPillContour(self._image, 50)
+        res = cv2.drawContours(res, contours, last_idx, (255,255,255), thickness=10)
 
-        res = self.bounding_box(res)
-        return res
+        # res = cv2.bitwise_not(res)
+
+        # tmp = np.zeros_like(res)
+        # cv2.imshow('contours', tmp)
+        # tmp = cv2.drawContours(tmp, contours, last_idx, (0,0,0), thickness=10)
+
+        res = self.closing(res, (5,5))
+
+        # res = self.crop_bounding_box(res)
+
+        self._engraved_text_bounding = res
+        return self._engraved_text_bounding
+
+    def get_bounding_box_coordinates(img_binary):
+        contours, _ = cv2.findContours(img_binary.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        all_points = []
+
+        for contour in contours:
+            for point in contour:
+                all_points.extend(point)
+
+        if all_points:
+            all_points = np.array(all_points).squeeze()
+            rect = cv2.minAreaRect(all_points)
+            box = cv2.boxPoints(rect)
+            box = np.int0(box)
+
+            # 최소, 최대 좌표 계산
+            min_x = np.min(box[:, 0])
+            min_y = np.min(box[:, 1])
+            max_x = np.max(box[:, 0])
+            max_y = np.max(box[:, 1])
+
+            return min_x, min_y, max_x, max_y
+
+        # 외곽선이 없는 경우 None 반환
+        return None
+
 
     def get_text_rec_cvt(self):
+        if self._text_img_cvt is not None:
+            return self._text_img_cvt
         # 이미지 배경 제거
         self._text_img_cvt = remove(self._image)
 
@@ -121,7 +172,7 @@ class Image_Preprocessing():
         # self._text_img_cvt = cv2.resize(self._text_img_cvt, dsize=(0, 0), fx=0.3, fy=0.3, interpolation=cv2.INTER_AREA)
 
         # 텍스트에 bounding box 생성하여 이미지의 텍스트 영역만 cut
-        self._text_img_cvt = self.bounding_box(self._text_img_cvt)
+        self._text_img_cvt = self.crop_bounding_box(self._text_img_cvt)
 
         return self._text_img_cvt
 
@@ -129,7 +180,7 @@ class Image_Preprocessing():
         result = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, block_size, C)
         return result
 
-    def bounding_box(self, img):
+    def crop_bounding_box(self, img):
         mser = cv2.MSER_create()
         regions, _ = mser.detectRegions(img)
 

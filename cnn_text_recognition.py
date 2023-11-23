@@ -2,42 +2,39 @@ import tensorflow as tf
 import keras
 from keras import layers
 import matplotlib.pyplot as plt
-import pymysql
 import cv2
 from PIL import Image
 import numpy as np
 import io
-from dotenv import load_dotenv
-import os
+from image_preprocessing import Image_Preprocessing
+import fetch_db
+
 
 NUM_PRINT_FRONT = 800
 NUM_PRINT_BACK = 400
 
 LEARNING_RATE = 0.001
 
-# .env에서 커넥션 정보 불러오기
-load_dotenv()
-host = os.environ.get('Host')
-port = os.environ.get('Port')
-user = os.environ.get('User')
-password = os.environ.get('Password')
-db = os.environ.get('DB')
 
-# mySql과의 커넥션 정의
-# conn = pymysql.connect(host=host, port=int(port), user=user, password=password, db=db, charset='utf8mb4')
+train_data, test_data = fetch_db.get_print_data(1, 10, True)
 
-# 커넥션의 커서를 정의
-cursor = conn.cursor()
-cursor.execute("select image from image_data where file_name = 'K-032657_0_0_0_0_75_000_200.png'")
-img = cursor.fetchone()
+for i in test_data:
+    img = Image.open(io.BytesIO(i[0]))
+    convertor = Image_Preprocessing(img)
+    converted = convertor.get_engraved_text_bounding()
+    image_array = np.array(img)
+    cv2.imshow('test', image_array)
+    cv2.waitKey(0)
 
-img = Image.open(io.BytesIO(img[0]))
-image_array = np.array(img)
-cv2.imshow('fetched', image_array)
-cv2.waitKey(0)
+for i in train_data:
+    img = Image.open(io.BytesIO(i[0]))
+    image_array = np.array(img)
+    cv2.imshow('train', image_array)
+    cv2.waitKey(0)
+
 cv2.destroyAllWindows()
 
-# TODO 데이터셋 로드하는 코드 작성
+# # TODO 데이터셋 로드하는 코드 작성
 # (train_x, train_y) = load_train_data()
 # (test_x, test_y) = load_test_data()
 
