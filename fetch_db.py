@@ -2,7 +2,6 @@ import pymysql
 from dotenv import load_dotenv
 import os
 
-
 def get_print_data(num_variations: int, num_datas_each: int, is_front: bool):
     # .env에서 커넥션 정보 불러오기
     load_dotenv()
@@ -56,6 +55,7 @@ def get_print_data(num_variations: int, num_datas_each: int, is_front: bool):
             ) and l.image_name = i.file_name 
             and l.print_front = '{i}'
             and l.drug_dir = '{substr}'
+            order by rand()
             limit {num_datas_each};
         """)
         res = cursor.fetchall()

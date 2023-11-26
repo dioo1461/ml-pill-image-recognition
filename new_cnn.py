@@ -8,6 +8,9 @@ from tqdm import tqdm
 from image_preprocessing import Image_Preprocessing
 from dotenv import load_dotenv
 import os
+import text_recognition
+from CRAFT.test import Craft_Model
+import fetch_db
 
 def load_encoding_table():
     load_dotenv()
@@ -31,20 +34,20 @@ def load_encoding_table():
             for row in results:
                 front_text = row['print_front'] if row['print_front'] is not None else ''
                 back_text = row['print_back'] if row['print_back'] is not None else ''
-                front_text = front_text.replace('분할선', '')
-                back_text = back_text.replace('분할선', '')
+                front_text = front_text.replace(' '|'분할선', '')
+                back_text = back_text.replace(' '|'분할선', '')
                 unique_texts.add(front_text)
                 unique_texts.add(back_text)
-
+            
             encoding_table = {text: i for i, text in enumerate(unique_texts)}
     finally:
         connection.close()
     
     return encoding_table
+    # x_train, y_train, x_test, y_test = fetch_db.get_print_data(30, 10, True)
+    # return x_train, y_train, x_test, y_test
 
-encoding_table = load_encoding_table()
-
-def load_data(limit=1000):
+def load_data(craft_model:Craft_Model, limit=1000):
     load_dotenv()
     host = os.environ.get('Host')
     port = os.environ.get('Port')
@@ -59,19 +62,28 @@ def load_data(limit=1000):
     labels = []
     try:
         with connection.cursor() as cursor:
-            sql = "SELECT i.image, l.print_front, l.print_back, l.drug_dir FROM image_data i JOIN label_data l ON i.file_name = l.file_name order by rand() LIMIT %s"
+            sql = f"""
+                SELECT i.image, l.print_front, l.print_back, l.drug_dir
+                FROM image_data i
+                JOIN label_data l ON i.file_name = l.file_name 
+                order by rand() 
+                LIMIT {limit}
+            """
             cursor.execute(sql, (limit,))
             data = cursor.fetchall()
 
             for item in tqdm(data, desc="Loading and preprocessing images"):
                 nparr = np.frombuffer(item['image'], np.uint8)
-                image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                # image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                image = cv2.imread(image)
 
                 # Image_Preprocessing 클래스를 사용하여 이미지 처리
                 img_processor = Image_Preprocessing(image)
-                
+
                 # 수정된 부분: preprocess_image 메서드를 호출
-                processed_img = img_processor.preprocess_image()
+                craft_model.run(image)
+                processed_img = img_processor.get_engraved_text_img_cvt()
+                preprocessed = img_processor.adaptive_threshold(preprocessed, 9, 0)
                 # cv2.imshow("1", processed_img)
                 # cv2.waitKey(0)
                 # cv2.destroyAllWindows
@@ -82,10 +94,24 @@ def load_data(limit=1000):
                 labels.append(label)
     finally:
         connection.close()
-
+    
+    print(images, labels)
     return np.array(images), np.array(labels)
 
-images, labels = load_data()
+
+
+# 텍스트 바운딩 가중치 설정
+weightfile = './CRAFT/model/craft_mlt_25k.pth'
+text_threshold = 0.7  # 텍스트 상태 임계치
+low_text = 0.4  # 1에 가까울수록 bounding 영역이 작아짐
+link_threshold = 1  # 1에 가까울수록 word보다 character 기준 검출
+cuda = False
+
+# 모델 객체 생성
+craft = Craft_Model(weightfile, text_threshold, low_text, link_threshold, cuda)
+
+encoding_table = load_encoding_table()
+images, labels = load_data(craft, 50)
 
 # 데이터 분할
 train_images, test_images, train_labels, test_labels = train_test_split(images, labels, test_size=0.2, random_state=42)
@@ -98,7 +124,7 @@ val_images = val_images / 255.0
 # 모델 구성
 model = tf.keras.models.Sequential()
 # 첫 번째 컨볼루션 레이어
-model.add(tf.keras.layers.Conv2D(8, (3, 3), activation='relu', input_shape=(1080, 1080, 1)))
+model.add(tf.keras.layers.Conv2D(8, (3, 3), activation='relu', input_shape=(256, 256, 1)))
 model.add(tf.keras.layers.MaxPooling2D((3, 3)))
 model.add(tf.keras.layers.Dropout(0.25))
 
@@ -139,7 +165,6 @@ plt.show()
 test_loss, test_acc = model.evaluate(test_images, test_labels, verbose=2)
 print('\nTest accuracy:', test_acc)
 
-save_model = input("Would you like to save the model? (yes/no): ")
-if save_model.lower() == 'yes':
-    model.save('text_rec.h5')
-    print("Model saved as 'text_rec.h5'")
+
+model.save('text_rec.h5')
+print("Model saved as 'text_rec.h5'")
