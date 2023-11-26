@@ -22,7 +22,7 @@ import cv2
 from skimage import io
 import numpy as np
 
-sys.path.append("D:\\basicML\\project\\ml-pill-image-recognition\\CRAFT")
+sys.path.append(".\\CRAFT")
 import craft_utils
 import imgproc
 import file_utils

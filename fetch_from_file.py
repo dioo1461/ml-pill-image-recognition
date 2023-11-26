@@ -63,7 +63,7 @@ root_folder = 'inputs\\sanghyeok_2'
 
 # 루트 폴더 내의 모든 하위 폴더 순회
 for idx, folder_name in enumerate(tqdm(os.listdir(root_folder), desc=f"conveting images")):
-    if idx <= 2:
+    if idx <= 15:
         continue
     print(f"converting {folder_name}")
     folder_path = os.path.join(root_folder, folder_name)
