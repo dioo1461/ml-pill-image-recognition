@@ -62,8 +62,10 @@ def get_print_data(num_variations: int, num_datas_each: int, is_front: bool):
         for j in res:
             datas.append(j)
 
-    train_data = []
-    test_data = []
+    train_data_x = []
+    train_data_y = []
+    test_data_x = []
+    test_data_y = []
 
     start_index = 0
     end_index = len(datas) - 1
@@ -72,8 +74,10 @@ def get_print_data(num_variations: int, num_datas_each: int, is_front: bool):
 
     for i in range(r):
         if (i - start_index) % step == 0:
-            test_data.append((datas[i]))
+            test_data_x.append((datas[i][0]))
+            test_data_y.append((datas[i][1]))
         else:
-            train_data.append((datas[i]))
+            train_data_x.append((datas[i][0]))
+            train_data_y.append((datas[i][1]))
 
-    return train_data, test_data
+    return (train_data_x, train_data_y), (test_data_x, test_data_y)
