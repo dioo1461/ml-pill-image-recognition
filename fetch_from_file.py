@@ -49,6 +49,10 @@ def process_images_in_folder(folder_path, root_folder, idx, craft:Craft_Model):
                 print(f"Error occured while processing image '{folder_name} idx {index_img}': {e}")
                 continue  # 오류가 발생하면 다음 이미지로 계속 진행
 
+############
+### MAIN ###
+############
+
 # 텍스트 바운딩 가중치 설정
 weightfile = './CRAFT/model/craft_mlt_25k.pth'
 text_threshold = 0.7  # 텍스트 상태 임계치
@@ -59,11 +63,11 @@ cuda = False
 # 모델 객체 생성
 craft = Craft_Model(weightfile, text_threshold, low_text, link_threshold, cuda)
 
-root_folder = 'inputs\\sanghyeok_2'
+root_folder = 'inputs\\sanghyeok'
 
 # 루트 폴더 내의 모든 하위 폴더 순회
 for idx, folder_name in enumerate(tqdm(os.listdir(root_folder), desc=f"conveting images")):
-    if idx <= 15:
+    if idx >= 4 or idx <= 2:
         continue
     print(f"converting {folder_name}")
     folder_path = os.path.join(root_folder, folder_name)
